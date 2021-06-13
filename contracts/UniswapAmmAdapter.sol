@@ -6,33 +6,6 @@ pragma experimental "ABIEncoderV2";
 import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol';
 import '@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol';
 
-/*
-interface IUniswapV2Router02 {
-
-    function addLiquidity(
-        address tokenA,
-        address tokenB,
-        uint amountADesired,
-        uint amountBDesired,
-        uint amountAMin,
-        uint amountBMin,
-        address to,
-        uint deadline
-    ) external returns (uint amountA, uint amountB, uint liquidity);
-
-    function removeLiquidity(
-        address tokenA,
-        address tokenB,
-        uint liquidity,
-        uint amountAMin,
-        uint amountBMin,
-        address to,
-        uint deadline
-    ) external returns (uint amountA, uint amountB);
-    
-}
-*/
-
 /**
  * @title UniswapAmmAdapter
  * @author Bryan Campbell
@@ -78,8 +51,8 @@ contract UniswapAmmAdapter {
         returns (address, uint256, bytes memory)
     {   
 
-        require(_isValidPool(_pool) ,"No pool found at address");
-        require(_checkPoolComponents(_components[0],_components[1], _pool), "Pool does not match provided token pair");
+        require(factory.getPair(_components[0],_components[1]) != 0x0000000000000000000000000000000000000000 ,"No pool found at address");
+        require(factory.getPair(_components[0],_components[1]) == _pool, "Pool does not match token pair");
 
         bytes memory callData = abi.encodeWithSignature(
             "addLiquidity(address,address,uint256,uint256,uint256,uint256,address,uint256)", 
@@ -108,6 +81,10 @@ contract UniswapAmmAdapter {
     view 
     returns (address, uint256, bytes memory)
     {
+        
+        require(factory.getPair(_components[0],_components[1]) != 0x0000000000000000000000000000000000000000, "No pool found at address");
+        require(factory.getPair(_components[0],_components[1]) == _pool, "Pool does not match token pair");
+
         bytes memory callData = abi.encodeWithSignature(
             "removeLiquidity(address,address,uint256,uint256,uint256,address,uint256)",
             _components[0],     //address tokenA,
@@ -172,19 +149,6 @@ contract UniswapAmmAdapter {
         view 
         returns(bool)
     {
-        return(_isValidPool(_pool) );
-    }
-
-
-
-    /* ============ Internal Functions ============ */
-
-    function _isValidPool(address _pool) 
-        internal
-        view
-        returns(bool)
-    {
-
         for(uint i = 0; i< factory.allPairsLength(); i++){
             if( factory.allPairs(i) == _pool){
                 return(true);
@@ -192,25 +156,6 @@ contract UniswapAmmAdapter {
         }
 
         return(false);
-
-    }
-
-    function _checkPoolComponents(
-        address _tokenA, 
-        address _tokenB, 
-        address _pool
-    )
-        internal
-        view
-        returns(bool)
-    {
-        if (factory.getPair(_tokenA, _tokenB) == _pool) {
-            return(true);
-        }
-        else{
-            return(false);
-        }
-        
     }
 
 }

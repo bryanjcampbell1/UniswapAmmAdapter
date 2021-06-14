@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity 0.6.12;
+pragma solidity 0.6.6;
 pragma experimental "ABIEncoderV2";
 
 import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol';
 import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
 import '@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol';
+import '@uniswap/v2-periphery/contracts/libraries/UniswapV2Library.sol';
+import '@uniswap/lib/contracts/libraries/Babylonian.sol';
+import './FullMath.sol';
 
 /**
  * @title UniswapAmmAdapter
@@ -13,6 +16,7 @@ import '@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol';
  * Uniswap V2 Adapter for adding liquidity through Set Protocol
  */
 contract UniswapAmmAdapter {
+    using SafeMath for uint256;
 
     /* ============ State Variables ============ */
     
@@ -38,7 +42,7 @@ contract UniswapAmmAdapter {
         factory = IUniswapV2Factory(_factory);
     }
 
-    /* ============ External Getter Functions ============ */
+    /* ============ External Functions ============ */
 
     function getProvideLiquidityCalldata(
         address _pool,
@@ -54,19 +58,26 @@ contract UniswapAmmAdapter {
         require(factory.getPair(_components[0],_components[1]) != address(0), "No pool found for token pair");
         require(factory.getPair(_components[0],_components[1]) == _pool, "Pool does not match token pair");
 
+        (uint256 amountAMin, uint256 amountBMin) = getLiquidityValue(
+            address(factory),
+            _components[0],
+            _components[1],
+            _minLiquidity
+        ); 
+
         bytes memory callData = abi.encodeWithSignature(
             "addLiquidity(address,address,uint256,uint256,uint256,uint256,address,uint256)", 
             _components[0],     // address tokenA
             _components[1],     // address tokenB
             _maxTokensIn[0],    // uint amountADesired
             _maxTokensIn[1],    // uint amountBDesired
-            _minLiquidity, //?     // uint amountAMin  
-            _minLiquidity, //?     // uint amountBMin
-            _pool,              // address to  --> is to == pool anywhere else?
+            amountAMin,         // uint amountAMin  
+            amountBMin,         // uint amountBMin
+            msg.sender,         // address to 
             block.timestamp     // deadline
         );
 
-        return (address(router), 0, callData);
+        return (address(router), 0, callData); 
 
     }    
 
@@ -90,9 +101,9 @@ contract UniswapAmmAdapter {
             _components[0],     //address tokenA,
             _components[1],     //address tokenB,
             _liquidity,         //uint liquidity
-            _minTokensOut[0],  //uint amountAMin
-            _minTokensOut[1],  //uint amountBMin
-            _pool,                //address to
+            _minTokensOut[0],   //uint amountAMin
+            _minTokensOut[1],   //uint amountBMin
+            msg.sender,         //address to
             block.timestamp     //uint deadline
         );
 
@@ -154,13 +165,50 @@ contract UniswapAmmAdapter {
         view
         returns(bool)
     {
-         try IUniswapV2Pair(_pool).factory() returns (address _token) {
+         try IUniswapV2Pair(_pool).factory() returns (address) {
             return(true);
         } catch{
             return(false);  
         }
     }
 
+    /* ====== From UniswapV2LiquidityMathLibrary.sol (Not updated on npm) ======= */
+
+    function computeLiquidityValue(
+        uint256 reservesA,
+        uint256 reservesB,
+        uint256 totalSupply,
+        uint256 liquidityAmount,
+        bool feeOn,
+        uint kLast
+    ) internal pure returns (uint256 tokenAAmount, uint256 tokenBAmount) {
+        if (feeOn && kLast > 0) {
+            uint rootK = Babylonian.sqrt(reservesA.mul(reservesB));
+            uint rootKLast = Babylonian.sqrt(kLast);
+            if (rootK > rootKLast) {
+                uint numerator1 = totalSupply;
+                uint numerator2 = rootK.sub(rootKLast);
+                uint denominator = rootK.mul(5).add(rootKLast);
+                uint feeLiquidity = FullMath.mulDiv(numerator1, numerator2, denominator);
+                totalSupply = totalSupply.add(feeLiquidity);
+            }
+        }
+        return (reservesA.mul(liquidityAmount) / totalSupply, reservesB.mul(liquidityAmount) / totalSupply);
+    }
+
+    function getLiquidityValue(
+        address factory,
+        address tokenA,
+        address tokenB,
+        uint256 liquidityAmount
+    ) internal view returns (uint256 tokenAAmount, uint256 tokenBAmount) {
+        (uint256 reservesA, uint256 reservesB) = UniswapV2Library.getReserves(factory, tokenA, tokenB);
+        IUniswapV2Pair pair = IUniswapV2Pair(UniswapV2Library.pairFor(factory, tokenA, tokenB));
+        bool feeOn = IUniswapV2Factory(factory).feeTo() != address(0);
+        uint kLast = feeOn ? pair.kLast() : 0;
+        uint totalSupply = pair.totalSupply();
+        return computeLiquidityValue(reservesA, reservesB, totalSupply, liquidityAmount, feeOn, kLast);
+    }
 
 }
 

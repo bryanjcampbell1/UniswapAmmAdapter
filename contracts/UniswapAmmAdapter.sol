@@ -66,7 +66,7 @@ contract UniswapAmmAdapter {
         returns (address, uint256, bytes memory)
     {   
 
-        require(factory.getPair(_components[0],_components[1]) != address(0), "No pool found for token pair");
+        require(this.isValidPool(_pool), "No pool found for token pair");
         require(factory.getPair(_components[0],_components[1]) == _pool, "Pool does not match token pair");
 
         (uint256 amountAMin, uint256 amountBMin) = getLiquidityValue(
@@ -115,7 +115,7 @@ contract UniswapAmmAdapter {
         returns (address, uint256, bytes memory)
     {
         
-        require(factory.getPair(_components[0],_components[1]) != address(0), "No pool found for token pair");
+        require(this.isValidPool(_pool), "No pool found for token pair");
         require(factory.getPair(_components[0],_components[1]) == _pool, "Pool does not match token pair");
 
         bytes memory callData = abi.encodeWithSignature(

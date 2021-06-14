@@ -27,7 +27,6 @@ describe("UniswapAmmAdapter", function() {
     uniswapAmmAdapter = await UniswapAmmAdapter.deploy(uinswapV2Router02,uniswapV2Factory);
     await uniswapAmmAdapter.deployed();
 
-    problemFound = false;
   });
 
 
@@ -46,7 +45,6 @@ describe("UniswapAmmAdapter", function() {
   
   it("Should return RemoveLiquidity calldata", async function() {
 
-  
     let removeLiqCalldata = await uniswapAmmAdapter.getRemoveLiquidityCalldata(
         pool,
         [tokenA,tokenB],
@@ -60,107 +58,68 @@ describe("UniswapAmmAdapter", function() {
 
   it("Should revert getProvideLiquidityCalldata when passing an invalid pool", async function() {
 
-    try{
-      await uniswapAmmAdapter.getProvideLiquidityCalldata(
-        invalidPool,
-        [tokenA,tokenB],
-        ["1000000000000000","1000000000000000000"],
-        "2000000000000000000"  
-      );
-    }
-    catch{
-      problemFound = true;
-    }
+    await expect(uniswapAmmAdapter.getProvideLiquidityCalldata(
+      invalidPool,
+      [tokenA,tokenB],
+      ["1000000000000000","1000000000000000000"],
+      "2000000000000000000"  
+    )).to.be.revertedWith("No pool found for token pair");
 
   });
 
   it("Should revert getRemoveLiquidityCalldata when passing an invalid pool", async function() {
 
-    try{
-      await uniswapAmmAdapter.getRemoveLiquidityCalldata(
-        invalidPool,
-        [tokenA,tokenB],
-        ["1000000000000000","1000000000000000000"],
-        "2000000000000000000"  
-      );
-    }
-    catch{
-      problemFound = true;
-    }
-
-    expect(problemFound).to.equal(true);
+    await expect(uniswapAmmAdapter.getRemoveLiquidityCalldata(
+      invalidPool,
+      [tokenA,tokenB],
+      ["1000000000000000","1000000000000000000"],
+      "2000000000000000000"  
+    )).to.be.revertedWith("No pool found for token pair");
 
   });
 
   it("Should revert getProvideLiquidityCalldata when pool does not match token pair", async function() {
 
-    try{
-      await uniswapAmmAdapter.getProvideLiquidityCalldata(
-        nonMatchingPool,
-        [tokenA,tokenB],
-        ["1000000000000000","1000000000000000000"],
-        "2000000000000000000"  
-      );
-    }
-    catch{
-      problemFound = true;
-    }
-
-    expect(problemFound).to.equal(true);
+    await expect(uniswapAmmAdapter.getProvideLiquidityCalldata(
+      nonMatchingPool,
+      [tokenA,tokenB],
+      ["1000000000000000","1000000000000000000"],
+      "2000000000000000000"  
+    )).to.be.revertedWith("Pool does not match token pair");
 
   });
 
   it("Should revert getRemoveLiquidityCalldata when pool does not match token pair", async function() {
 
-    try{
-      await uniswapAmmAdapter.getRemoveLiquidityCalldata(
-        nonMatchingPool,
-        [tokenA,tokenB],
-        ["1000000000000000","1000000000000000000"],
-        "2000000000000000000"  
-      );
-    }
-    catch{
-      problemFound = true;
-    }
-
-    expect(problemFound).to.equal(true);
+    await expect(uniswapAmmAdapter.getRemoveLiquidityCalldata(
+      nonMatchingPool,
+      [tokenA,tokenB],
+      ["1000000000000000","1000000000000000000"],
+      "2000000000000000000"  
+    )).to.be.revertedWith("Pool does not match token pair");
 
   });
 
   it("Should revert getProvideLiquiditySingleAssetCalldata", async function() {
 
-    try{
-      await uniswapAmmAdapter.getProvideLiquiditySingleAssetCalldata(
-        pool,
-        tokenA,
-        "1000000000000000",
-        "2000000000000000000"  
-      );
-    }
-    catch{
-      problemFound = true;
-    }
-
-    expect(problemFound).to.equal(true);
+    await expect(uniswapAmmAdapter.getProvideLiquiditySingleAssetCalldata(
+      pool,
+      tokenA,
+      "1000000000000000",
+      "2000000000000000000"  
+    )).to.be.revertedWith("Uniswap pools require a token pair");
 
   });
 
   it("Should revert getRemoveLiquiditySingleAssetCalldata", async function() {
 
-    try{
-      await uniswapAmmAdapter.getRemoveLiquiditySingleAssetCalldata(
-        pool,
-        tokenA,
-        "1000000000000000",
-        "2000000000000000000"  
-      );
-    }
-    catch{
-      problemFound = true;
-    }
+    await expect(uniswapAmmAdapter.getRemoveLiquiditySingleAssetCalldata(
+      pool,
+      tokenA,
+      "1000000000000000",
+      "2000000000000000000"  
+    )).to.be.revertedWith("Uniswap pools require a token pair");
 
-    expect(problemFound).to.equal(true);
   });
 
   it("Should return address of UinswapV2Router02", async function() {

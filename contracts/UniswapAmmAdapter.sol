@@ -43,12 +43,23 @@ contract UniswapAmmAdapter {
     }
 
     /* ============ External Functions ============ */
-
+    /**
+     * Return Provide Liquidity calldata for Uniswap V2 Router02
+     *
+     * @param  _pool               Address of the Uniswap Liquidity Pool
+     * @param  _components         Addresses of the provided tokens 
+     * @param  _maxTokensIn        Number of each tokens desired
+     * @param  _minLiquidity       Minimum number of Liquidity Pool tokens to be returned
+     *
+     * @return address                   Uniswap V2 Router02 contract address
+     * @return uint256                   Call value
+     * @return bytes                     Provide Liquidity calldata
+     */
     function getProvideLiquidityCalldata(
         address _pool,
         address[] calldata _components,
         uint256[] calldata _maxTokensIn,
-        uint256 _minLiquidity //_minLiquidity can refer to the total supply of the pool tokens. 
+        uint256 _minLiquidity 
     )
         external
         view
@@ -81,16 +92,27 @@ contract UniswapAmmAdapter {
 
     }    
 
-
+    /**
+     * Return Remove Liquidity calldata for Uniswap V2 Router02
+     *
+     * @param  _pool               Address of the Uniswap Liquidity Pool
+     * @param  _components         Addresses of the provided tokens 
+     * @param  _minTokensOut       Minimum number of each token returned
+     * @param  _liquidity          Number of Liquidity Pool tokens to be returned
+     *
+     * @return address                   Uniswap V2 Router02 contract address
+     * @return uint256                   Call value
+     * @return bytes                     Provide Liquidity calldata
+     */
     function getRemoveLiquidityCalldata(
         address _pool,
         address[] calldata _components,
         uint256[] calldata _minTokensOut,
         uint256 _liquidity
     ) 
-    external 
-    view 
-    returns (address, uint256, bytes memory)
+        external 
+        view 
+        returns (address, uint256, bytes memory)
     {
         
         require(factory.getPair(_components[0],_components[1]) != address(0), "No pool found for token pair");
@@ -111,7 +133,9 @@ contract UniswapAmmAdapter {
     }
 
 
-
+    /**
+     * Always reverts. Uniswap doesn't directly support single side liquidity  
+     */
     function getProvideLiquiditySingleAssetCalldata(
         address _pool,
         address _component,
@@ -125,7 +149,9 @@ contract UniswapAmmAdapter {
         require(false, "Uniswap pools require a token pair");
     }
 
-
+    /**
+     * Always reverts. Uniswap doesn't directly support single side liquidity  
+     */
     function getRemoveLiquiditySingleAssetCalldata(
         address _pool,
         address _component,
@@ -139,6 +165,12 @@ contract UniswapAmmAdapter {
         require(false, "Uniswap pools require a token pair");
     }
 
+
+    /**
+     * Returns the address of the Uniswap V2 Router02. 
+     * @param  _pool               Required only to match ABI by Set Protocol
+     * @return address             Uniswap V2 Router02 address
+     */
     function getSpenderAddress(address _pool)  
         external
         view
@@ -147,7 +179,11 @@ contract UniswapAmmAdapter {
         return address(router);
     }
 
-
+    /**
+     * Returns the validity of a Liquidity Pool. 
+     * @param  _pool               Proposed Liquidity Pool address
+     * @return bool                True if Liquidity Pool exists and false if it doesnt
+     */
     function isValidPool(address _pool) 
         external 
         view 
@@ -160,12 +196,15 @@ contract UniswapAmmAdapter {
         }
     }
 
+    /**
+     * Reverts if there is no Pair at address _pool. 
+     */
     function checkForRevert(address _pool) 
         external
         view
         returns(bool)
     {
-         try IUniswapV2Pair(_pool).factory() returns (address) {
+        try IUniswapV2Pair(_pool).factory() returns (address) {
             return(true);
         } catch{
             return(false);  
@@ -173,7 +212,6 @@ contract UniswapAmmAdapter {
     }
 
     /* ====== From UniswapV2LiquidityMathLibrary.sol (Not updated on npm) ======= */
-
     function computeLiquidityValue(
         uint256 reservesA,
         uint256 reservesB,

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
-
 pragma solidity 0.6.12;
 pragma experimental "ABIEncoderV2";
 
 import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol';
+import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
 import '@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol';
 
 /**
@@ -51,7 +51,7 @@ contract UniswapAmmAdapter {
         returns (address, uint256, bytes memory)
     {   
 
-        require(factory.getPair(_components[0],_components[1]) != 0x0000000000000000000000000000000000000000 ,"No pool found at address");
+        require(factory.getPair(_components[0],_components[1]) != address(0), "No pool found for token pair");
         require(factory.getPair(_components[0],_components[1]) == _pool, "Pool does not match token pair");
 
         bytes memory callData = abi.encodeWithSignature(
@@ -82,7 +82,7 @@ contract UniswapAmmAdapter {
     returns (address, uint256, bytes memory)
     {
         
-        require(factory.getPair(_components[0],_components[1]) != 0x0000000000000000000000000000000000000000, "No pool found at address");
+        require(factory.getPair(_components[0],_components[1]) != address(0), "No pool found for token pair");
         require(factory.getPair(_components[0],_components[1]) == _pool, "Pool does not match token pair");
 
         bytes memory callData = abi.encodeWithSignature(
@@ -126,17 +126,9 @@ contract UniswapAmmAdapter {
     returns (address, uint256, bytes memory)
     {
         require(false, "Uniswap pools require a token pair");
-
     }
 
-
-    /**
-     * Returns the address to approve source tokens to for trading. This is the Uniswap router address
-     *
-     * @return address             Address of the contract to approve tokens to
-     */
-
-    function getSpenderAddress(address _pool)  //_pool just included to match set protocol's definition/interface
+    function getSpenderAddress(address _pool)  
         external
         view
         returns (address)
@@ -144,19 +136,31 @@ contract UniswapAmmAdapter {
         return address(router);
     }
 
+
     function isValidPool(address _pool) 
         external 
         view 
         returns(bool)
     {
-        for(uint i = 0; i< factory.allPairsLength(); i++){
-            if( factory.allPairs(i) == _pool){
-                return(true);
-            }
+         try this.checkForRevert(_pool) returns (bool) {
+            return(true);
+        } catch{
+            return(false);  
         }
-
-        return(false);
     }
+
+    function checkForRevert(address _pool) 
+        external
+        view
+        returns(bool)
+    {
+         try IUniswapV2Pair(_pool).factory() returns (address _token) {
+            return(true);
+        } catch{
+            return(false);  
+        }
+    }
+
 
 }
 

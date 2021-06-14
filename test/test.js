@@ -176,9 +176,11 @@ describe("UniswapAmmAdapter", function() {
   });
 
   it("Should check id pool is valid", async function() {
+    const goodPool = await uniswapAmmAdapter.isValidPool(pool) ;
+    expect(goodPool).to.equal(true);
 
-    const isValidPool = await uniswapAmmAdapter.isValidPool("0xB472ED81cFA35863E8431c084c75bc2b3D098AD6") ;
-    expect(isValidPool).to.equal(true);
+    const badPool = await uniswapAmmAdapter.isValidPool(invalidPool) ;
+    expect(badPool).to.equal(false);
 
   });
 

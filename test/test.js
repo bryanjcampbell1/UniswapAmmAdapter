@@ -33,35 +33,28 @@ describe("UniswapAmmAdapter", function() {
 
   it("Should return ProvideLiquidity calldata", async function() {
 
-    try{
-      await uniswapAmmAdapter.getProvideLiquidityCalldata(
-        pool,
-        [tokenA,tokenB],
-        ["1000000000000000","1000000000000000000"],
-        "2000000000000000000"
+    let provideLiqCalldata = await uniswapAmmAdapter.getProvideLiquidityCalldata(
+      pool,
+      [tokenA,tokenB],
+      ["1000000000000000","1000000000000000000"],
+      "2000000000000000000"
     );
-    }
-    catch{
-      problemFound = true;
-    }
-    expect(problemFound).to.equal(false);
+   
+    expect(provideLiqCalldata).to.have.lengthOf(3);
 
   });
   
   it("Should return RemoveLiquidity calldata", async function() {
 
-    try{
-      await uniswapAmmAdapter.getRemoveLiquidityCalldata(
+  
+    let removeLiqCalldata = await uniswapAmmAdapter.getRemoveLiquidityCalldata(
         pool,
         [tokenA,tokenB],
         ["1000000000000000","1000000000000000000"],
-        "2000000000000000000" //liquidity
-    );
-    }
-    catch{
-      problemFound = true;
-    }
-    expect(problemFound).to.equal(false);
+        "2000000000000000000"
+      );
+    
+    expect(removeLiqCalldata).to.have.lengthOf(3);
 
   });
 
